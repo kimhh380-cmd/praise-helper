@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="오선·타브 악보와 PDF 악보를 만들고 고치고, 연주할 때 콘티대로 악보를 넘기는 앱. 친구들과 공동 프로젝트로 함께 써요.">
+<meta name="theme-color" content="#18212C">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="악보 편집">
+<title>악보 편집</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;600;700&family=JetBrains+Mono:wght@500;700&family=Noto+Music&display=swap">
+<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0;font-size:14px;font-family:system-ui,sans-serif}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="stylesheet" href="style.css?v=15">
+</head>
+<body>
+<div class="wrap">
+<div id="acct" class="acct" hidden></div>
+
+<section id="gate">
+  <div class="gatebox">
+    <svg class="glogo ico" viewBox="0 0 120 70" aria-hidden="true"><g class="s"><line x1="6" y1="15" x2="114" y2="15"/><line x1="6" y1="25" x2="114" y2="25"/><line x1="6" y1="35" x2="114" y2="35"/><line x1="6" y1="45" x2="114" y2="45"/><line x1="6" y1="55" x2="114" y2="55"/></g><ellipse class="f" cx="24" cy="45" rx="6" ry="4.4"/><line class="s" x1="29.5" y1="45" x2="29.5" y2="19" style="stroke-width:2"/><ellipse class="f" cx="46" cy="35" rx="6" ry="4.4"/><line class="s" x1="51.5" y1="35" x2="51.5" y2="9" style="stroke-width:2"/><g transform="rotate(-38 88 38)"><rect class="a" x="72" y="33" width="38" height="10" rx="2"/><path class="r" d="M72 33 L62 38 L72 43 Z"/></g></svg>
+    <h1 class="ht">악보 편집</h1>
+    <p class="lead">오선·타브 악보와 PDF 악보를 만들고 고치고, 연주할 때는 콘티대로 눌러서 넘겨요. 로그인하면 친구들과 공동 프로젝트를 만들어 악보를 함께 고치고, 주최자가 넘기면 모두의 화면이 함께 넘어가요.</p>
+    <div id="gatebody"><p class="gwait">확인하는 중…</p></div>
+    <button class="glink" id="gatesolo">로그인 없이 혼자 쓰기</button>
+    <details class="gdev" id="gdev"><summary>개발자 코드로 들어가기</summary>
+      <form class="gdevf" id="gdevform" autocomplete="off" novalidate><input id="gdevcode" type="password" autocomplete="off" placeholder="개발자 코드" aria-label="개발자 코드"><button class="btn" type="submit" id="gdevsub">들어가기</button></form>
+      <p class="err" id="gdeverr" role="alert"></p>
+    </details>
+  </div>
+</section>
+
+<section id="home" hidden>
+  <h1 class="ht">악보 편집</h1>
+  <p class="lead">무엇을 할지 골라 주세요. 만든 악보는 아래 “내 악보함”에 저장돼요.</p>
+  <div class="hub">
+    <button class="hubc" id="go-edit"><svg class="ico" viewBox="0 0 120 70" aria-hidden="true"><g class="s"><line x1="6" y1="15" x2="114" y2="15"/><line x1="6" y1="25" x2="114" y2="25"/><line x1="6" y1="35" x2="114" y2="35"/><line x1="6" y1="45" x2="114" y2="45"/><line x1="6" y1="55" x2="114" y2="55"/></g><ellipse class="f" cx="24" cy="45" rx="6" ry="4.4"/><line class="s" x1="29.5" y1="45" x2="29.5" y2="19" style="stroke-width:2"/><ellipse class="f" cx="46" cy="35" rx="6" ry="4.4"/><line class="s" x1="51.5" y1="35" x2="51.5" y2="9" style="stroke-width:2"/><g transform="rotate(-38 88 38)"><rect class="a" x="72" y="33" width="38" height="10" rx="2"/><path class="r" d="M72 33 L62 38 L72 43 Z"/></g></svg><span class="hn">악보 편집</span><span class="hd">오선·타브 악보 만들기, PDF 악보에 음표·코드 고치기. 프로젝트를 만들거나 연동해서 함께 고쳐요.</span></button>
+    <button class="hubc" id="go-run"><svg class="ico" viewBox="0 0 120 70" aria-hidden="true"><rect x="36" y="9" width="36" height="52" rx="5" class="hl"/><g class="s"><line x1="6" y1="15" x2="114" y2="15"/><line x1="6" y1="25" x2="114" y2="25"/><line x1="6" y1="35" x2="114" y2="35"/><line x1="6" y1="45" x2="114" y2="45"/><line x1="6" y1="55" x2="114" y2="55"/></g><ellipse class="f" cx="20" cy="45" rx="6" ry="4.4"/><ellipse class="f" cx="46" cy="35" rx="6" ry="4.4"/><ellipse class="f" cx="62" cy="40" rx="6" ry="4.4"/><path class="r" d="M88 20 L112 35 L88 50 Z"/></svg><span class="hn">악보 실행</span><span class="hd">콘티(곡 순서)대로 악보를 넘겨요. 반 쪽 넘김·두 쪽 보기, 반복 점프, 메트로놈, 반주, 공연 잠금, 밤 모드.</span></button>
+  </div>
+  <section class="lib" id="lib" aria-label="내 악보함"></section>
+  <p class="meta verline" id="verline"></p>
+</section>
+
+<section id="app" hidden>
+  <div class="topbar"><button class="btn sec" id="switch">← 처음 화면</button><span class="instpick" id="instpickw" hidden><span class="lb">악기</span><span class="seg" id="instseg"></span></span></div>
+  <h1 id="apph1"></h1>
+  <p class="lead" id="applead"></p>
+  <div class="tabs" role="tablist"><button role="tab" id="t-pj" aria-selected="true">프로젝트</button><button role="tab" id="t-nt" aria-selected="false">오선·타브 악보</button><button role="tab" id="t-pdf" aria-selected="false">PDF 악보</button><button role="tab" id="t-run" aria-selected="false">악보 실행</button></div>
+  <section id="p-pj"></section>
+  <section id="p-nt" class="rf" hidden></section>
+  <section id="p-run" class="rf" hidden></section>
+  <section id="p-pdf" class="rf" hidden></section>
+</section>
+
+
+</div>
+<script src="theory.js?v=15"></script>
+<script src="fretted.js?v=15"></script>
+<script src="piano.js?v=15"></script>
+<script src="instruments.js?v=15"></script>
+<script src="sound.js?v=15"></script>
+<script src="ui-common.js?v=15"></script>
+<script src="library.js?v=15"></script>
+<script src="firebase-config.js?v=15"></script>
+<script src="collab.js?v=15"></script>
+<script src="collab-ui.js?v=15"></script>
+<script src="score-import.js?v=15"></script>
+<script src="score-render.js?v=15"></script>
+<script src="transcribe.js?v=15"></script>
+<script src="recorder.js?v=15"></script>
+<script src="score-edit.js?v=15"></script>
+<script src="tab-score.js?v=15"></script>
+<script src="share-score.js?v=15"></script>
+<script src="run-sheet.js?v=15"></script>
+<script src="run-pages.js?v=15"></script>
+<script src="pdf-notes.js?v=15"></script>
+<script src="pdf-edit.js?v=15"></script>
+<script src="share-pdf.js?v=15"></script>
+<script src="song-order.js?v=15"></script>
+<script src="stage.js?v=15"></script>
+<script src="team.js?v=15"></script>
+<script src="main.js?v=15"></script>
+<script>if('serviceWorker' in navigator&&!window.MHNative){addEventListener('load',()=>{navigator.serviceWorker.register('sw.js',{updateViaCache:'none'}).catch(()=>{})})}</script>
+</body>
+</html>

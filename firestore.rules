@@ -1,0 +1,126 @@
+rules_version = '2';
+
+// 악기 코드 도감 · 함께하기 보안 규칙
+// Firebase 콘솔 → Firestore Database → 규칙(Rules) 탭에 이 파일 내용을 통째로 붙여 넣고 "게시"를 누르세요.
+// ★ 아래 isDev() 안의 myid 를 내 아이디(앱에서 회원가입할 때 쓴 아이디)로 바꾸세요.
+//   개발자가 여러 명이면 'friend@music-helper.example.com' 처럼 쉼표로 더 적어요.
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function isDev() {
+      return request.auth != null && request.auth.token.email in [
+        'myid@music-helper.example.com'
+      ];
+    }
+    function signedIn() { return request.auth != null; }
+    function uid() { return request.auth.uid; }
+    function proj(pid) { return get(/databases/$(database)/documents/projects/$(pid)).data; }
+    function roleIn(p) { return p.members.get(uid(), ''); }
+    function isMember(pid) { return signedIn() && roleIn(proj(pid)) != ''; }
+    function isHost(pid) { return signedIn() && roleIn(proj(pid)) == 'host'; }
+    function lead(pid) { return isDev() || isHost(pid); }
+    // 참가자가 공유 악보를 고칠 수 있는지: "참가자 편집 허용"이 켜져 있고 "모두 잠그기"가 꺼져 있을 때
+    function partCanEdit(pid) {
+      let p = proj(pid);
+      return signedIn() && roleIn(p) == 'part' && p.get('allowEdit', true) == true && p.get('hostLock', false) != true;
+    }
+    // 주최자가 마지막으로 고친 뒤 1분 동안은 그 악보가 잠겨요
+    function lockedByOther() {
+      return resource.data.get('lock', null) != null
+        && resource.data.lock.by != uid()
+        && request.time < resource.data.lock.at + duration.value(60, 's');
+    }
+    function touchesLock() {
+      return request.resource.data.diff(resource.data).affectedKeys().hasAny(['lock']);
+    }
+    function isShared(kind) { return kind in ['scores', 'sheets', 'orders', 'pdfs']; }
+    function validRoles(m) { return m.values().hasOnly(['host', 'part']); }
+    // “마지막으로 고친 사람”은 언제나 나 자신이어야 해요
+    function stampOk() { return request.resource.data.get('updatedBy', '') == uid(); }
+
+    // 아이디 → 사람 (개발자·주최자가 아이디로 사람을 추가할 때 한 명씩 찾아봐요)
+    match /usernames/{name} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && request.resource.data.uid == uid()
+        && request.auth.token.email == name + '@music-helper.example.com';
+      allow update: if signedIn() && resource.data.uid == uid() && request.resource.data.uid == uid();
+      allow delete: if false;
+    }
+
+    // 초대 코드 → 프로젝트 (코드를 아는 사람만 하나씩 찾아볼 수 있어요)
+    match /codes/{code} {
+      allow get: if signedIn();
+      allow list: if false;
+      allow create: if signedIn() && (isDev() || isHost(request.resource.data.pid));
+      allow delete: if signedIn() && (isDev() || isHost(resource.data.pid));
+    }
+
+    match /projects/{pid} {
+      function joining() {
+        let before = resource.data;
+        let after = request.resource.data;
+        return signedIn()
+          && before.get('open', true) == true
+          && before.members.get(uid(), '') == ''
+          && after.get('joinCode', '') == before.get('code', '-')
+          && after.diff(before).affectedKeys().hasOnly(['members', 'memberIds', 'names', 'joinCode'])
+          && after.members.diff(before.members).affectedKeys().hasOnly([uid()])
+          && after.members[uid()] == 'part'
+          && after.memberIds.size() == before.memberIds.size() + 1
+          && after.memberIds.hasAll(before.memberIds)
+          && uid() in after.memberIds
+          && after.names.diff(before.names).affectedKeys().hasOnly([uid()]);
+      }
+      function leaving() {
+        let before = resource.data;
+        let after = request.resource.data;
+        return signedIn()
+          && before.members.get(uid(), '') == 'part'
+          && after.diff(before).affectedKeys().hasOnly(['members', 'memberIds', 'names'])
+          && after.members.diff(before.members).affectedKeys().hasOnly([uid()])
+          && !(uid() in after.members)
+          && !(uid() in after.memberIds)
+          && after.memberIds.size() == before.memberIds.size() - 1
+          && before.memberIds.hasAll(after.memberIds)
+          && after.names.diff(before.names).affectedKeys().hasOnly([uid()]);
+      }
+      function renaming() {
+        let before = resource.data;
+        let after = request.resource.data;
+        return signedIn()
+          && before.members.get(uid(), '') != ''
+          && after.diff(before).affectedKeys().hasOnly(['names'])
+          && after.names.diff(before.names).affectedKeys().hasOnly([uid()]);
+      }
+
+      allow get: if isDev() || (signedIn() && resource.data.members.get(uid(), '') != '');
+      allow list: if isDev() || (signedIn() && uid() in resource.data.memberIds);
+      // 개발자는 주최자를 직접 정해서 만들 수 있고, 다른 사람은 자기가 주최자인 프로젝트만 만들어요
+      allow create: if (isDev() && validRoles(request.resource.data.members))
+        || (signedIn()
+          && validRoles(request.resource.data.members)
+          && request.resource.data.members.keys().hasOnly([uid()])
+          && request.resource.data.members[uid()] == 'host'
+          && request.resource.data.memberIds == [uid()]);
+      allow update: if (isDev() && validRoles(request.resource.data.members))
+        || (signedIn() && resource.data.members.get(uid(), '') == 'host' && validRoles(request.resource.data.members))
+        || joining() || leaving() || renaming();
+      allow delete: if isDev() || (signedIn() && resource.data.members.get(uid(), '') == 'host');
+
+      // 공유 악보(scores) · 실행 악보(sheets) · PDF 표시(pdfs) · 함께 실행 상태(live)
+      match /{kind}/{docId} {
+        allow read: if isDev() || isMember(pid);
+        allow create: if isShared(kind) && docId.matches('^[A-Za-z0-9_-]{1,64}$') && stampOk()
+          && (lead(pid) || (partCanEdit(pid) && request.resource.data.get('lock', null) == null));
+        allow update: if isShared(kind)
+          && (!request.resource.data.diff(resource.data).affectedKeys().hasAny(['updatedBy']) || stampOk())
+          && (lead(pid) || (partCanEdit(pid) && !lockedByOther() && !touchesLock()));
+        allow delete: if isShared(kind) && lead(pid);
+        allow write: if kind == 'live' && docId == 'state' && lead(pid)
+          && (request.resource == null || request.resource.data.get('by', '') == uid());
+      }
+    }
+  }
+}
